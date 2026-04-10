@@ -1,0 +1,20 @@
+agent:
+  name: ebpf-agent
+
+interfaces:
+  # CloudStack node default: VM edge + bridge + VPN + overlay
+  include_prefixes:
+    - vnet
+    - cloudbr
+    - brvx
+    - tun
+    - vxlan
+  exclude_prefixes:
+    - lo
+    - docker
+    - veth
+    - virbr
+    - cni
+    - flannel
+    - kube
+  require_up: true

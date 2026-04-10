@@ -1,0 +1,24 @@
+snapshot_fields:
+  - collected_at
+  - server_time
+  - server_time_unix
+  - active_client_count
+  - bytes_received_sum
+  - bytes_sent_sum
+  - sessions
+  - collector_source
+  - collector_status_type
+
+session_fields:
+  - common_name
+  - real_address
+  - virtual_address
+  - bytes_received
+  - bytes_sent
+  - connected_since
+  - client_id
+  - peer_id
+  - cipher
+
+kill_common_name: ""
+kill_common_name_message: ""

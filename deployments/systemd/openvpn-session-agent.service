@@ -1,0 +1,19 @@
+[Unit]
+Description=OpenVPN Session Agent
+After=network.target openvpn-server@server.service
+Wants=openvpn-server@server.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/openvpn-monitoring/agents/openvpn-exporter
+ExecStart=/opt/openvpn-monitoring/agents/openvpn-exporter/bin/openvpn-session-agent \
+  --management-addr 127.0.0.1:7505 \
+  --grpc-target 127.0.0.1:50051 \
+  --grpc-method /openvpn.v1.SessionService/ReportSnapshot \
+  --interval 10s
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
