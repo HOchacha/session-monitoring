@@ -33,9 +33,9 @@ setup: deps vmlinux generate build  ## 첫 클론 후 전체 환경 구성 및 �
 deps:  ## clang-18, llvm-18, bpftool 설치 (sudo 권한 필요)
 	@echo "→ apt 패키지 설치 중 (clang-18, llvm-18, bpftool)..."
 	sudo apt-get update -qq
-	sudo apt-get install -y clang-18 llvm-18 \
+	sudo apt-get install -y clang-18 llvm-18 libbpf-dev \
 	    linux-tools-$(KERNEL_RELEASE) linux-tools-common 2>/dev/null \
-	    || sudo apt-get install -y clang-18 llvm-18 linux-tools-common
+	    || sudo apt-get install -y clang-18 llvm-18 libbpf-dev linux-tools-common
 	@echo "→ clang / llvm-strip 심볼릭 링크 생성..."
 	@if ! command -v clang >/dev/null 2>&1; then \
 	    sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang; \

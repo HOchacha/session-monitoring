@@ -8,9 +8,30 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
+	"structs"
 
 	"github.com/cilium/ebpf"
 )
+
+type FlowFlowKey struct {
+	_         structs.HostLayout
+	SrcIp     [16]uint8
+	DstIp     [16]uint8
+	SrcPort   uint16
+	DstPort   uint16
+	Protocol  uint8
+	IpVersion uint8
+	Pad       [2]uint8
+	Ifindex   uint32
+}
+
+type FlowFlowMetrics struct {
+	_         structs.HostLayout
+	Bytes     uint64
+	Packets   uint64
+	FirstSeen uint64
+	LastSeen  uint64
+}
 
 // LoadFlow returns the embedded CollectionSpec for Flow.
 func LoadFlow() (*ebpf.CollectionSpec, error) {
