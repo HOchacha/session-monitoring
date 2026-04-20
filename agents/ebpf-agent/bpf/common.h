@@ -1,21 +1,25 @@
 #ifndef __EBPF_AGENT_COMMON_H__
 #define __EBPF_AGENT_COMMON_H__
 
-struct flow_event {
-    __u64 ts_unix_nano;
-    __u32 ifindex;
-    __u8  ip_version;  /* 4 or 6 — inner IP version for VXLAN */
-    __u8  protocol;    /* IPPROTO_TCP=6, IPPROTO_UDP=17, ... */
-    __u8  src_ip[16];  /* inner src for VXLAN, otherwise outer */
-    __u8  dst_ip[16];  /* inner dst for VXLAN, otherwise outer */
-    __u16 src_port;    /* inner ports for VXLAN */
+/* flow_key identifies a unique flow (5-tuple).  44 bytes.
+ * Optimised for tun (L3) devices — no VLAN or VXLAN metadata. */
+struct flow_key {
+    __u8  src_ip[16];   /* IPv4 in first 4 bytes; IPv6 uses all 16 */
+    __u8  dst_ip[16];
+    __u16 src_port;
     __u16 dst_port;
-    __u16 vlan_id;     /* 802.1Q VLAN ID (12-bit); 0 = untagged */
-    __u32 vni;         /* VXLAN Network Identifier; 0 = non-VXLAN */
-    __u8  outer_src_ip[16]; /* outer (tunnel endpoint) src; zeroed if non-VXLAN */
-    __u8  outer_dst_ip[16]; /* outer (tunnel endpoint) dst */
+    __u8  protocol;     /* IPPROTO_TCP=6, IPPROTO_UDP=17, ... */
+    __u8  ip_version;   /* 4 or 6 */
+    __u8  _pad[2];      /* explicit padding — keeps ifindex 4-byte aligned */
+    __u32 ifindex;
+};
+
+/* flow_metrics holds aggregated counters per flow.  32 bytes. */
+struct flow_metrics {
     __u64 bytes;
     __u64 packets;
+    __u64 first_seen;   /* ktime_ns of the first packet in this window */
+    __u64 last_seen;    /* ktime_ns of the most recent packet */
 };
 
 #endif

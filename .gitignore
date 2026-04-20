@@ -1,2 +1,4 @@
 .tmp/
-ebpf-agent
+agents/ebpf-agent/ebpf-agent
+agents/openvpn-exporter/bin/openvpn-session-agent
+agents/ebpf-agent/bpf/vmlinux.h

@@ -6,8 +6,10 @@ import (
 	"strings"
 )
 
-// Default include order prefers per-VM interfaces first for better attribution.
-var defaultIncludePrefixes = []string{"vnet", "cloudbr", "brvx", "tun", "vxlan"}
+// defaultIncludePrefixes targets only tun devices (OpenVPN L3 tunnels).
+// Other interface types (vnet, cloudbr, brvx, vxlan) are handled separately
+// when per-VM eBPF deployment is introduced.
+var defaultIncludePrefixes = []string{"tun"}
 
 var defaultExcludePrefixes = []string{"lo", "docker", "veth", "virbr", "cni", "flannel", "kube"}
 

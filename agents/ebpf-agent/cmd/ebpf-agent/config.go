@@ -64,7 +64,7 @@ func loadConfig(path string) (runtimeConfig, error) {
 	}
 
 	if len(cfg.Interfaces.IncludePrefixes) == 0 {
-		cfg.Interfaces.IncludePrefixes = []string{"vnet", "cloudbr", "brvx", "tun", "vxlan"}
+		cfg.Interfaces.IncludePrefixes = []string{"tun"}
 	}
 	if len(cfg.Interfaces.ExcludePrefixes) == 0 {
 		cfg.Interfaces.ExcludePrefixes = []string{"lo", "docker", "veth", "virbr", "cni", "flannel", "kube"}

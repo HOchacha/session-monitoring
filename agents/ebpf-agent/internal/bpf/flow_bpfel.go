@@ -61,7 +61,7 @@ type FlowProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type FlowMapSpecs struct {
-	Events *ebpf.MapSpec `ebpf:"events"`
+	Flows *ebpf.MapSpec `ebpf:"flows"`
 }
 
 // FlowVariableSpecs contains global variables before they are loaded into the kernel.
@@ -90,12 +90,12 @@ func (o *FlowObjects) Close() error {
 //
 // It can be passed to LoadFlowObjects or ebpf.CollectionSpec.LoadAndAssign.
 type FlowMaps struct {
-	Events *ebpf.Map `ebpf:"events"`
+	Flows *ebpf.Map `ebpf:"flows"`
 }
 
 func (m *FlowMaps) Close() error {
 	return _FlowClose(
-		m.Events,
+		m.Flows,
 	)
 }
 

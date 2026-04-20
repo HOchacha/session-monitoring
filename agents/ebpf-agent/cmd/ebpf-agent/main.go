@@ -2,15 +2,17 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"ebpf-agent/internal/collector"
 	"log"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"ebpf-agent/internal/collector"
+
 	"github.com/cilium/ebpf/rlimit"
 )
+
+const flowPollInterval = 5 * time.Second
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -38,7 +40,6 @@ func main() {
 		log.Fatalf("no interfaces matched — check include/exclude prefixes")
 	}
 
-	// Remove memlock rlimit for kernels < 5.11.
 	if err := rlimit.RemoveMemlock(); err != nil {
 		log.Fatalf("remove memlock: %v", err)
 	}
@@ -49,46 +50,21 @@ func main() {
 	}
 	defer att.Close()
 
-	log.Printf("ringbuf consumer starting")
-	events := collector.ConsumeEvents(ctx, att.Reader)
+	log.Printf("flow map consumer starting (poll=%s)", flowPollInterval)
+	flowCh := collector.ReadFlows(ctx, att.FlowMap, flowPollInterval)
 
 	for {
 		select {
-		case ev, ok := <-events:
+		case ev, ok := <-flowCh:
 			if !ok {
 				log.Printf("%s consumer channel closed", cfg.Agent.Name)
 				return
 			}
-			vlanTag := ""
-			if ev.VlanID != 0 {
-				vlanTag = fmt.Sprintf(" vlan=%d", ev.VlanID)
-			}
-			if ev.VNI != 0 {
-				log.Printf("flow [vxlan vni=%d%s outer=%s→%s]: %s:%d → %s:%d proto=%d bytes=%d if=%d",
-					ev.VNI, vlanTag,
-					collector.FormatIP(ev.OuterSrcIP, 4), collector.FormatIP(ev.OuterDstIP, 4),
-					collector.FormatIP(ev.SrcIP, ev.IPVersion), ev.SrcPort,
-					collector.FormatIP(ev.DstIP, ev.IPVersion), ev.DstPort,
-					ev.Protocol, ev.Bytes, ev.IfIndex)
-			} else if ev.VlanID != 0 {
-				log.Printf("flow [vlan=%d]: %s:%d → %s:%d proto=%d bytes=%d if=%d",
-					ev.VlanID,
-					collector.FormatIP(ev.SrcIP, ev.IPVersion), ev.SrcPort,
-					collector.FormatIP(ev.DstIP, ev.IPVersion), ev.DstPort,
-					ev.Protocol, ev.Bytes, ev.IfIndex)
-			} else {
-				log.Printf("flow: %s:%d → %s:%d proto=%d bytes=%d if=%d",
-					collector.FormatIP(ev.SrcIP, ev.IPVersion), ev.SrcPort,
-					collector.FormatIP(ev.DstIP, ev.IPVersion), ev.DstPort,
-					ev.Protocol, ev.Bytes, ev.IfIndex)
-			}
+			log.Printf("flow: %s", collector.FormatFlow(ev))
 		case <-ctx.Done():
 			log.Printf("%s stopping", cfg.Agent.Name)
-			att.Reader.Close()
-			// Drain remaining events.
-			for range events {
+			for range flowCh {
 			}
-			time.Sleep(50 * time.Millisecond)
 			return
 		}
 	}
