@@ -8,7 +8,6 @@ import (
 	bpfgen "ebpf-agent/internal/bpf"
 
 	"github.com/cilium/ebpf"
-	"github.com/cilium/ebpf/ringbuf"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
 )
@@ -18,18 +17,22 @@ import (
 type Attachments struct {
 	Objects *bpfgen.FlowObjects
 	Filters []netlink.Filter
-	Reader  *ringbuf.Reader
+	FlowMap *ebpf.Map // per-CPU hash map for flow aggregation
 }
 
 // LoadAndAttach loads the BPF program, attaches it as a tc-ingress
-// classifier on every interface in ifaces, and opens a ringbuf reader.
+// classifier on every interface in ifaces, and returns a handle to the
+// flow aggregation map.
 func LoadAndAttach(ifaces []string) (*Attachments, error) {
 	var objs bpfgen.FlowObjects
 	if err := bpfgen.LoadFlowObjects(&objs, &ebpf.CollectionOptions{}); err != nil {
 		return nil, fmt.Errorf("load BPF objects: %w", err)
 	}
 
-	att := &Attachments{Objects: &objs}
+	att := &Attachments{
+		Objects: &objs,
+		FlowMap: objs.Flows,
+	}
 
 	for _, name := range ifaces {
 		if err := attachTC(name, objs.HandleIngress, att); err != nil {
@@ -38,13 +41,6 @@ func LoadAndAttach(ifaces []string) (*Attachments, error) {
 		}
 		log.Printf("attached tc/ingress on %s", name)
 	}
-
-	rd, err := ringbuf.NewReader(objs.Events)
-	if err != nil {
-		att.Close()
-		return nil, fmt.Errorf("open ringbuf reader: %w", err)
-	}
-	att.Reader = rd
 
 	return att, nil
 }
@@ -97,9 +93,6 @@ func attachTC(ifname string, prog *ebpf.Program, att *Attachments) error {
 
 // Close detaches all tc filters and releases BPF resources.
 func (a *Attachments) Close() {
-	if a.Reader != nil {
-		a.Reader.Close()
-	}
 	for _, f := range a.Filters {
 		if err := netlink.FilterDel(f); err != nil {
 			log.Printf("WARN: remove filter: %v", err)
